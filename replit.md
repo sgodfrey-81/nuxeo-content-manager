@@ -40,7 +40,18 @@ Use `host.docker.internal` to reach a Nuxeo instance running on the Docker host 
 
 - Browse documents from a Nuxeo repository
 - Create new documents (File, Note, Folder, Workspace)
+- Upload files with drag-and-drop or file picker (uses Nuxeo batch upload API)
 - Edit document metadata (name, type, description)
 - Delete documents
 - Search/filter documents
 - Responsive side panel for document details
+
+## Upload Flow
+
+File upload uses Nuxeo's batch upload API via `POST /api/upload`:
+1. Express receives the file via multer (max 100 MB)
+2. Creates a batch upload on Nuxeo (`POST /api/v1/upload/`)
+3. Uploads the file blob to the batch (`POST /api/v1/upload/{batchId}/0`)
+4. Creates a File document with the blob attached via `file:content`
+
+The frontend upload dialog supports multiple file selection, drag-and-drop, and optional descriptions.

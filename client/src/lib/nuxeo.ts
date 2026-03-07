@@ -161,3 +161,27 @@ export async function searchDocuments(term: string): Promise<NuxeoDocument[]> {
     );
   }
 }
+
+export async function uploadFile(
+  file: File,
+  description?: string,
+  parentPath?: string
+): Promise<NuxeoDocument> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (description) formData.append("description", description);
+  if (parentPath) formData.append("parentPath", parentPath);
+
+  const response = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Upload failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return mapNuxeoEntry(data);
+}

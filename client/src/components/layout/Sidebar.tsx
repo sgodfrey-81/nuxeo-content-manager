@@ -8,7 +8,6 @@ import {
   HardDrive,
   Users,
   Building2,
-  BoxSelect
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,9 +28,12 @@ export default function Sidebar() {
   return (
     <aside className="w-64 border-r bg-sidebar flex flex-col h-full flex-shrink-0">
       <div className="h-16 flex items-center px-6 border-b">
-        <div className="flex items-center gap-2 text-primary font-heading font-bold text-lg tracking-tight">
-          <BoxSelect className="h-6 w-6" strokeWidth={2.5} />
-          Nuxeo<span className="text-foreground">Manager</span>
+        <div className="flex items-center gap-2.5 font-heading font-bold text-lg tracking-tight">
+          <svg viewBox="0 0 32 32" className="h-7 w-7 flex-shrink-0" aria-label="Nuxeo logo">
+            <rect width="32" height="32" rx="6" className="fill-primary" />
+            <path d="M8 8L14.5 16L8 24H12L16 18.5L20 24H24L17.5 16L24 8H20L16 13.5L12 8H8Z" className="fill-primary-foreground" />
+          </svg>
+          <span className="text-primary">Nuxeo</span><span className="text-foreground">Manager</span>
         </div>
       </div>
 

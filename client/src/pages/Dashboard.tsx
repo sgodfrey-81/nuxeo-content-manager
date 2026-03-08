@@ -4,8 +4,9 @@ import Header from "@/components/layout/Header";
 import DocumentTable from "@/components/documents/DocumentTable";
 import DocumentDetails from "@/components/documents/DocumentDetails";
 import { Button } from "@/components/ui/button";
-import { Plus, Upload, Loader2, FileUp, X } from "lucide-react";
+import { Plus, Upload, Loader2, FileUp, X, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +31,8 @@ export default function Dashboard() {
   const [uploadDesc, setUploadDesc] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ["/api/documents"],
@@ -111,6 +114,24 @@ export default function Dashboard() {
     if (selectedDocId === id) setSelectedDocId(null);
   };
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      for (const id of ids) {
+        await deleteDocument(id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      const count = checkedIds.size;
+      if (selectedDocId && checkedIds.has(selectedDocId)) setSelectedDocId(null);
+      setCheckedIds(new Set());
+      toast({ title: `${count} document${count > 1 ? "s" : ""} deleted` });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error deleting documents", description: err.message, variant: "destructive" });
+    },
+  });
+
   const handleUpdate = (updatedDoc: NuxeoDocument) => {
     updateMutation.mutate({
       id: updatedDoc.id,
@@ -119,6 +140,28 @@ export default function Dashboard() {
         "dc:description": updatedDoc.description || "",
       },
     });
+  };
+
+  const handleToggleCheck = (id: string) => {
+    setCheckedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleToggleAll = () => {
+    if (filteredDocs.every(d => checkedIds.has(d.id))) {
+      setCheckedIds(new Set());
+    } else {
+      setCheckedIds(new Set(filteredDocs.map(d => d.id)));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    setIsDeleteConfirmOpen(false);
+    bulkDeleteMutation.mutate(Array.from(checkedIds));
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -241,6 +284,34 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {checkedIds.size > 0 && (
+              <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5 mb-4 animate-in fade-in slide-in-from-top-2" data-testid="bulk-action-bar">
+                <span className="text-sm font-medium text-foreground">
+                  {checkedIds.size} document{checkedIds.size > 1 ? "s" : ""} selected
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setCheckedIds(new Set())} data-testid="button-clear-selection">
+                    Clear
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => setIsDeleteConfirmOpen(true)}
+                    disabled={bulkDeleteMutation.isPending}
+                    data-testid="button-delete-selected"
+                  >
+                    {bulkDeleteMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    Delete Selected
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="bg-card rounded-xl border shadow-sm flex-1 overflow-hidden flex flex-col">
               {isLoading ? (
                 <div className="flex-1 flex items-center justify-center">
@@ -252,6 +323,9 @@ export default function Dashboard() {
                   selectedDocId={selectedDocId}
                   onSelect={setSelectedDocId}
                   onDelete={handleDelete}
+                  checkedIds={checkedIds}
+                  onToggleCheck={handleToggleCheck}
+                  onToggleAll={handleToggleAll}
                 />
               )}
             </div>
@@ -268,6 +342,27 @@ export default function Dashboard() {
           )}
         </main>
       </div>
+
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {checkedIds.size} document{checkedIds.size > 1 ? "s" : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The selected document{checkedIds.size > 1 ? "s" : ""} will be permanently removed from Nuxeo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-bulk-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-bulk-delete"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={isUploadOpen} onOpenChange={(open) => { setIsUploadOpen(open); if (!open) { setUploadFiles([]); setUploadDesc(""); } }}>
         <DialogContent className="sm:max-w-[500px]">

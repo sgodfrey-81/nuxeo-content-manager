@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { NuxeoDocument } from "@/lib/nuxeo";
 
@@ -29,6 +30,9 @@ interface DocumentTableProps {
   selectedDocId: string | null;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  checkedIds: Set<string>;
+  onToggleCheck: (id: string) => void;
+  onToggleAll: () => void;
 }
 
 const getFileIcon = (type: string) => {
@@ -55,7 +59,7 @@ const getStatusColor = (status: string) => {
   }
 };
 
-export default function DocumentTable({ documents, selectedDocId, onSelect, onDelete }: DocumentTableProps) {
+export default function DocumentTable({ documents, selectedDocId, onSelect, onDelete, checkedIds, onToggleCheck, onToggleAll }: DocumentTableProps) {
   if (documents.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
@@ -66,11 +70,22 @@ export default function DocumentTable({ documents, selectedDocId, onSelect, onDe
     );
   }
 
+  const allChecked = documents.length > 0 && documents.every(d => checkedIds.has(d.id));
+  const someChecked = documents.some(d => checkedIds.has(d.id)) && !allChecked;
+
   return (
     <ScrollArea className="flex-1">
       <table className="w-full text-left border-collapse">
         <thead className="bg-muted/50 sticky top-0 z-10 backdrop-blur-sm">
           <tr>
+            <th className="py-3 px-4 w-[40px]">
+              <Checkbox
+                checked={allChecked ? true : someChecked ? "indeterminate" : false}
+                onCheckedChange={onToggleAll}
+                data-testid="checkbox-select-all"
+                aria-label="Select all documents"
+              />
+            </th>
             <th className="font-medium text-xs text-muted-foreground py-3 px-4 w-[40%]">Name</th>
             <th className="font-medium text-xs text-muted-foreground py-3 px-4">Status</th>
             <th className="font-medium text-xs text-muted-foreground py-3 px-4">Modified</th>
@@ -86,9 +101,18 @@ export default function DocumentTable({ documents, selectedDocId, onSelect, onDe
               data-testid={`row-document-${doc.id}`}
               className={cn(
                 "group hover:bg-muted/30 transition-colors cursor-pointer",
-                selectedDocId === doc.id ? "bg-primary/5" : ""
+                selectedDocId === doc.id ? "bg-primary/5" : "",
+                checkedIds.has(doc.id) ? "bg-primary/5" : ""
               )}
             >
+              <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                <Checkbox
+                  checked={checkedIds.has(doc.id)}
+                  onCheckedChange={() => onToggleCheck(doc.id)}
+                  data-testid={`checkbox-doc-${doc.id}`}
+                  aria-label={`Select ${doc.name}`}
+                />
+              </td>
               <td className="py-3 px-4">
                 <div className="flex items-center gap-3">
                   {getFileIcon(doc.type)}

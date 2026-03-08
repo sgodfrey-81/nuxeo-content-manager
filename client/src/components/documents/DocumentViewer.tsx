@@ -77,6 +77,14 @@ function PdfViewer({ document: doc, url }: DocumentViewerProps & { url?: string 
 
   const fileUrl = url || getBlobUrl(doc.id);
 
+  useEffect(() => {
+    setPageNumber(1);
+    setNumPages(0);
+    setLoading(true);
+    setError(false);
+    setExpanded(false);
+  }, [doc.id]);
+
   if (error) return <ViewerError message="Failed to load PDF" />;
 
   return (

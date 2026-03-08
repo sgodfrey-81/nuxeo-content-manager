@@ -224,27 +224,55 @@ export async function registerRoutes(
   app.get("/api/documents/:id/blob", async (req, res) => {
     try {
       const url = `${NUXEO_URL}/api/v1/id/${req.params.id}/@blob/file:content`;
-      const response = await fetch(url, {
-        headers: {
-          "Authorization": NUXEO_AUTH,
-        },
-      });
+      const headers: Record<string, string> = {
+        "Authorization": NUXEO_AUTH,
+      };
+      if (req.headers.range) {
+        headers["Range"] = req.headers.range;
+      }
 
-      if (!response.ok) {
+      const response = await fetch(url, { headers });
+
+      if (!response.ok && response.status !== 206) {
         const text = await response.text();
         throw new Error(`Nuxeo blob error ${response.status}: ${text}`);
       }
 
       const contentType = response.headers.get("content-type") || "application/octet-stream";
       const contentDisposition = response.headers.get("content-disposition");
+      const contentLength = response.headers.get("content-length");
+      const contentRange = response.headers.get("content-range");
+      const acceptRanges = response.headers.get("accept-ranges");
+
+      res.status(response.status === 206 ? 206 : 200);
       res.setHeader("Content-Type", contentType);
       if (contentDisposition) res.setHeader("Content-Disposition", contentDisposition);
+      if (contentLength) res.setHeader("Content-Length", contentLength);
+      if (contentRange) res.setHeader("Content-Range", contentRange);
+      if (acceptRanges) res.setHeader("Accept-Ranges", acceptRanges);
+      else res.setHeader("Accept-Ranges", "bytes");
 
-      const arrayBuffer = await response.arrayBuffer();
-      res.send(Buffer.from(arrayBuffer));
+      if (response.body) {
+        const reader = (response.body as any).getReader();
+        const pump = async () => {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) { res.end(); break; }
+            if (!res.write(value)) {
+              await new Promise(resolve => res.once('drain', resolve));
+            }
+          }
+        };
+        pump().catch(() => res.end());
+      } else {
+        const arrayBuffer = await response.arrayBuffer();
+        res.send(Buffer.from(arrayBuffer));
+      }
     } catch (error: any) {
       log(`Error fetching blob for ${req.params.id}: ${error.message}`, "nuxeo");
-      res.status(502).json({ error: "Failed to fetch blob", details: error.message });
+      if (!res.headersSent) {
+        res.status(502).json({ error: "Failed to fetch blob", details: error.message });
+      }
     }
   });
 

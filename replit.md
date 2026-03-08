@@ -46,6 +46,19 @@ Use `host.docker.internal` to reach a Nuxeo instance running on the Docker host 
 - Search/filter documents
 - Responsive side panel for document details
 
+## Document Viewer
+
+The details panel includes a content viewer that automatically detects content type and renders:
+- **Images** (image/*): Native `<img>` tag via blob proxy
+- **PDFs** (application/pdf): `react-pdf` with page navigation and expand-to-fullscreen
+- **Video** (video/*): HTML5 `<video>` with controls
+- **Audio** (audio/*): HTML5 `<audio>` with controls
+- **Text** (text/*): Fetched and displayed in a `<pre>` block
+- **Office docs**: Attempts Nuxeo's PDF rendition, falls back to download prompt
+- **Other/no blob**: Shows file type icon
+
+Key files: `client/src/components/documents/DocumentViewer.tsx`, blob proxy routes in `server/routes.ts`
+
 ## Upload Flow
 
 File upload uses Nuxeo's batch upload API via `POST /api/upload`:

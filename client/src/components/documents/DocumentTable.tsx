@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import {
   FileText,
   File,
@@ -8,7 +9,10 @@ import {
   Trash,
   Edit2,
   StickyNote,
-  LayoutGrid
+  LayoutGrid,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -35,6 +39,9 @@ interface DocumentTableProps {
   onToggleAll: () => void;
 }
 
+type SortKey = "name" | "status" | "modified" | "modifiedBy";
+type SortDirection = "asc" | "desc";
+
 const getFileIcon = (type: string) => {
   switch (type.toLowerCase()) {
     case 'file': return <FileText className="h-5 w-5 text-cat-blue" />;
@@ -59,7 +66,50 @@ const getStatusColor = (status: string) => {
   }
 };
 
+function SortIcon({ column, sortKey, sortDirection }: { column: SortKey; sortKey: SortKey; sortDirection: SortDirection }) {
+  if (column !== sortKey) {
+    return <ArrowUpDown className="h-3 w-3 opacity-0 group-hover/header:opacity-50 transition-opacity" />;
+  }
+  return sortDirection === "asc"
+    ? <ArrowUp className="h-3 w-3 text-primary" />
+    : <ArrowDown className="h-3 w-3 text-primary" />;
+}
+
 export default function DocumentTable({ documents, selectedDocId, onSelect, onDelete, checkedIds, onToggleCheck, onToggleAll }: DocumentTableProps) {
+  const [sortKey, setSortKey] = useState<SortKey>("modified");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDirection(key === "modified" ? "desc" : "asc");
+    }
+  };
+
+  const sortedDocuments = useMemo(() => {
+    const sorted = [...documents].sort((a, b) => {
+      let comparison = 0;
+      switch (sortKey) {
+        case "name":
+          comparison = a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+          break;
+        case "status":
+          comparison = a.status.localeCompare(b.status, undefined, { sensitivity: "base" });
+          break;
+        case "modified":
+          comparison = new Date(a.modified).getTime() - new Date(b.modified).getTime();
+          break;
+        case "modifiedBy":
+          comparison = a.modifiedBy.localeCompare(b.modifiedBy, undefined, { sensitivity: "base" });
+          break;
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+    return sorted;
+  }, [documents, sortKey, sortDirection]);
+
   if (documents.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
@@ -72,6 +122,13 @@ export default function DocumentTable({ documents, selectedDocId, onSelect, onDe
 
   const allChecked = documents.length > 0 && documents.every(d => checkedIds.has(d.id));
   const someChecked = documents.some(d => checkedIds.has(d.id)) && !allChecked;
+
+  const columns: { key: SortKey; label: string; widthClass?: string }[] = [
+    { key: "name", label: "Name", widthClass: "w-[40%]" },
+    { key: "status", label: "Status" },
+    { key: "modified", label: "Modified" },
+    { key: "modifiedBy", label: "Modified By" },
+  ];
 
   return (
     <ScrollArea className="flex-1">
@@ -86,15 +143,32 @@ export default function DocumentTable({ documents, selectedDocId, onSelect, onDe
                 aria-label="Select all documents"
               />
             </th>
-            <th className="font-medium text-xs text-muted-foreground py-3 px-4 w-[40%]">Name</th>
-            <th className="font-medium text-xs text-muted-foreground py-3 px-4">Status</th>
-            <th className="font-medium text-xs text-muted-foreground py-3 px-4">Modified</th>
-            <th className="font-medium text-xs text-muted-foreground py-3 px-4">Modified By</th>
+            {columns.map((col) => (
+              <th
+                key={col.key}
+                className={cn(
+                  "py-3 px-4 group/header",
+                  col.widthClass
+                )}
+              >
+                <button
+                  className={cn(
+                    "inline-flex items-center gap-1.5 font-medium text-xs transition-colors select-none",
+                    sortKey === col.key ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={() => handleSort(col.key)}
+                  data-testid={`button-sort-${col.key}`}
+                >
+                  {col.label}
+                  <SortIcon column={col.key} sortKey={sortKey} sortDirection={sortDirection} />
+                </button>
+              </th>
+            ))}
             <th className="font-medium text-xs text-muted-foreground py-3 px-4 w-[60px]"></th>
           </tr>
         </thead>
         <tbody className="divide-y">
-          {documents.map((doc) => (
+          {sortedDocuments.map((doc) => (
             <tr
               key={doc.id}
               onClick={() => onSelect(doc.id)}

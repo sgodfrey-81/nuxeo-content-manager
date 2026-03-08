@@ -9,6 +9,8 @@ export interface NuxeoDocument {
   description?: string;
   path?: string;
   uid?: string;
+  mimeType?: string;
+  hasBlob?: boolean;
 }
 
 export interface NuxeoConfig {
@@ -27,7 +29,8 @@ const MOCK_DOCUMENTS: NuxeoDocument[] = [
 
 function mapNuxeoEntry(entry: any): NuxeoDocument {
   const props = entry.properties || {};
-  const blobLength = props["file:content"]?.length;
+  const fileContent = props["file:content"];
+  const blobLength = fileContent?.length;
   let size = "--";
   if (blobLength) {
     if (blobLength > 1024 * 1024) size = `${(blobLength / (1024 * 1024)).toFixed(1)} MB`;
@@ -46,6 +49,8 @@ function mapNuxeoEntry(entry: any): NuxeoDocument {
     status: entry.state || "project",
     description: props["dc:description"] || "",
     path: entry.path,
+    mimeType: fileContent?.["mime-type"] || undefined,
+    hasBlob: !!fileContent,
   };
 }
 
@@ -56,6 +61,14 @@ async function apiFetch(path: string, options?: RequestInit) {
     throw new Error(data.error || `Request failed: ${response.status}`);
   }
   return response.json();
+}
+
+export function getBlobUrl(id: string): string {
+  return `/api/documents/${id}/blob`;
+}
+
+export function getRenditionUrl(id: string, name: string): string {
+  return `/api/documents/${id}/rendition/${name}`;
 }
 
 export async function getConfig(): Promise<NuxeoConfig> {

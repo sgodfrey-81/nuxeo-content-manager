@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { X, FileText, Download, Share2, Edit, Info, Check } from "lucide-react";
+import { X, Download, Share2, Edit, Info, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { NuxeoDocument } from "@/lib/nuxeo";
+import { getBlobUrl, type NuxeoDocument } from "@/lib/nuxeo";
+import DocumentViewer from "./DocumentViewer";
 
 interface DocumentDetailsProps {
   document: NuxeoDocument;
@@ -44,17 +45,21 @@ export default function DocumentDetails({ document, onClose, onUpdate }: Documen
       </div>
 
       <ScrollArea className="flex-1 p-5">
-        <div className="flex flex-col items-center text-center mb-8 mt-4">
-          <div className="h-20 w-20 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 text-primary shadow-sm border border-primary/20">
-            <FileText className="h-10 w-10" />
-          </div>
-          <h2 className="text-xl font-heading font-semibold text-foreground mb-1" data-testid="text-detail-name">{document.name}</h2>
+        <div className="flex flex-col items-center text-center mb-4 mt-4">
+          <DocumentViewer document={document} />
+          <h2 className="text-xl font-heading font-semibold text-foreground mb-1 mt-3" data-testid="text-detail-name">{document.name}</h2>
           <p className="text-sm text-muted-foreground">{document.type} • {document.size}</p>
         </div>
 
         <div className="flex gap-2 mb-8 px-2">
-          <Button className="flex-1 gap-2" variant="default" data-testid="button-download">
-            <Download className="h-4 w-4" /> Download
+          <Button className="flex-1 gap-2" variant="default" asChild data-testid="button-download">
+            {document.hasBlob ? (
+              <a href={getBlobUrl(document.id)} download={document.name}>
+                <Download className="h-4 w-4" /> Download
+              </a>
+            ) : (
+              <span><Download className="h-4 w-4" /> Download</span>
+            )}
           </Button>
           <Button className="flex-1 gap-2" variant="outline" data-testid="button-share">
             <Share2 className="h-4 w-4" /> Share

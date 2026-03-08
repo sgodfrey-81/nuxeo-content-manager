@@ -221,5 +221,57 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/documents/:id/blob", async (req, res) => {
+    try {
+      const url = `${NUXEO_URL}/api/v1/id/${req.params.id}/@blob/file:content`;
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": NUXEO_AUTH,
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Nuxeo blob error ${response.status}: ${text}`);
+      }
+
+      const contentType = response.headers.get("content-type") || "application/octet-stream";
+      const contentDisposition = response.headers.get("content-disposition");
+      res.setHeader("Content-Type", contentType);
+      if (contentDisposition) res.setHeader("Content-Disposition", contentDisposition);
+
+      const arrayBuffer = await response.arrayBuffer();
+      res.send(Buffer.from(arrayBuffer));
+    } catch (error: any) {
+      log(`Error fetching blob for ${req.params.id}: ${error.message}`, "nuxeo");
+      res.status(502).json({ error: "Failed to fetch blob", details: error.message });
+    }
+  });
+
+  app.get("/api/documents/:id/rendition/:name", async (req, res) => {
+    try {
+      const url = `${NUXEO_URL}/api/v1/id/${req.params.id}/@rendition/${req.params.name}`;
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": NUXEO_AUTH,
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Nuxeo rendition error ${response.status}: ${text}`);
+      }
+
+      const contentType = response.headers.get("content-type") || "application/pdf";
+      res.setHeader("Content-Type", contentType);
+
+      const arrayBuffer = await response.arrayBuffer();
+      res.send(Buffer.from(arrayBuffer));
+    } catch (error: any) {
+      log(`Error fetching rendition for ${req.params.id}: ${error.message}`, "nuxeo");
+      res.status(502).json({ error: "Failed to fetch rendition", details: error.message });
+    }
+  });
+
   return httpServer;
 }

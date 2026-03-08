@@ -61,15 +61,15 @@ export default function Sidebar() {
         
         <div className="space-y-1">
           <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-            <Folder className="h-4 w-4 text-blue-500" strokeWidth={2} />
+            <Folder className="h-4 w-4 text-cat-blue" strokeWidth={2} />
             Marketing
           </button>
           <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-            <Folder className="h-4 w-4 text-emerald-500" strokeWidth={2} />
+            <Folder className="h-4 w-4 text-cat-teal" strokeWidth={2} />
             Engineering
           </button>
           <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-            <Folder className="h-4 w-4 text-purple-500" strokeWidth={2} />
+            <Folder className="h-4 w-4 text-cat-purple" strokeWidth={2} />
             HR & Ops
           </button>
         </div>

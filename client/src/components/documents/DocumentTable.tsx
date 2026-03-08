@@ -37,25 +37,25 @@ interface DocumentTableProps {
 
 const getFileIcon = (type: string) => {
   switch (type.toLowerCase()) {
-    case 'file': return <FileText className="h-5 w-5 text-blue-500" />;
-    case 'folder': return <Folder className="h-5 w-5 text-yellow-500 fill-yellow-500/20" />;
-    case 'note': return <StickyNote className="h-5 w-5 text-amber-500" />;
-    case 'workspace': return <LayoutGrid className="h-5 w-5 text-indigo-500" />;
-    case 'picture': return <ImageIcon className="h-5 w-5 text-purple-500" />;
-    default: return <File className="h-5 w-5 text-slate-500" />;
+    case 'file': return <FileText className="h-5 w-5 text-cat-blue" />;
+    case 'folder': return <Folder className="h-5 w-5 text-cat-orange fill-cat-orange/20" />;
+    case 'note': return <StickyNote className="h-5 w-5 text-warning" />;
+    case 'workspace': return <LayoutGrid className="h-5 w-5 text-cat-purple" />;
+    case 'picture': return <ImageIcon className="h-5 w-5 text-cat-pink" />;
+    default: return <File className="h-5 w-5 text-muted-foreground" />;
   }
 };
 
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case 'approved':
-    case 'published': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400';
+    case 'published': return 'bg-success/10 text-success dark:bg-success/20 dark:text-success-foreground';
     case 'draft':
-    case 'project': return 'bg-slate-100 text-slate-700 dark:bg-slate-500/20 dark:text-slate-400';
-    case 'in review': return 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400';
+    case 'project': return 'bg-muted text-muted-foreground';
+    case 'in review': return 'bg-info/10 text-info dark:bg-info/20 dark:text-info-foreground';
     case 'archived':
-    case 'obsolete': return 'bg-stone-100 text-stone-700 dark:bg-stone-500/20 dark:text-stone-400';
-    default: return 'bg-slate-100 text-slate-700 dark:bg-slate-500/20 dark:text-slate-400';
+    case 'obsolete': return 'bg-muted text-muted-foreground';
+    default: return 'bg-muted text-muted-foreground';
   }
 };
 
